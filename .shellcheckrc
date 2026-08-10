@@ -1,0 +1,8 @@
+# ShellCheck project configuration.
+#
+# SC1091: ArchForge resolves its own install root at runtime
+# (ARCHFORGE_ROOT) and sources core/commands relative to it. ShellCheck
+# cannot statically follow these dynamic paths, and the sourced files are
+# already linted individually by the CI pipeline, so this check is
+# disabled at the project level rather than suppressed piecemeal.
+disable=SC1091

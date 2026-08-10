@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# bin/archforge
+# ArchForge - Forge your architecture.
+#
+# Main CLI entrypoint. Resolves paths, sources core modules and commands,
+# then dispatches to the requested subcommand.
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Resolve ARCHFORGE_ROOT
+# ---------------------------------------------------------------------------
+# Follow symlinks so this works correctly when installed globally via a
+# symlink in a directory like /usr/local/bin.
+resolve_root() {
+  local source="${BASH_SOURCE[0]}"
+  while [[ -L "${source}" ]]; do
+    local dir
+    dir="$(cd -P "$(dirname -- "${source}")" >/dev/null 2>&1 && pwd)"
+    source="$(readlink -- "${source}")"
+    [[ "${source}" != /* ]] && source="${dir}/${source}"
+  done
+  local bin_dir
+  bin_dir="$(cd -P "$(dirname -- "${source}")" >/dev/null 2>&1 && pwd)"
+  dirname -- "${bin_dir}"
+}
+
+ARCHFORGE_ROOT="$(resolve_root)"
+export ARCHFORGE_ROOT
+
+# ---------------------------------------------------------------------------
+# Load core modules
+# ---------------------------------------------------------------------------
+# shellcheck source=../core/config.sh
+source "${ARCHFORGE_ROOT}/core/config.sh"
+# shellcheck source=../core/logger.sh
+source "${ARCHFORGE_ROOT}/core/logger.sh"
+# shellcheck source=../core/validation.sh
+source "${ARCHFORGE_ROOT}/core/validation.sh"
+# shellcheck source=../core/filesystem.sh
+source "${ARCHFORGE_ROOT}/core/filesystem.sh"
+# shellcheck source=../core/template.sh
+source "${ARCHFORGE_ROOT}/core/template.sh"
+
+# ---------------------------------------------------------------------------
+# Load commands
+# ---------------------------------------------------------------------------
+# shellcheck source=../commands/list.sh
+source "${ARCHFORGE_COMMANDS_DIR}/list.sh"
+# shellcheck source=../commands/info.sh
+source "${ARCHFORGE_COMMANDS_DIR}/info.sh"
+# shellcheck source=../commands/init.sh
+source "${ARCHFORGE_COMMANDS_DIR}/init.sh"
+
+print_help() {
+  cat <<'EOF'
+ArchForge - Forge your architecture.
+
+Usage:
+
+  archforge <command> [options]
+
+Commands:
+
+  init    Create a new project from an architecture template
+  list    List available architecture templates
+  info    Show information about an architecture template
+
+Options:
+
+  --help      Show help
+  --version   Show version
+EOF
+}
+
+print_version() {
+  printf 'ArchForge v%s\n' "${ARCHFORGE_VERSION}"
+}
+
+main() {
+  if [[ $# -eq 0 ]]; then
+    print_help
+    return "${EXIT_INVALID_ARGUMENTS}"
+  fi
+
+  local command="$1"
+  shift
+
+  case "${command}" in
+    --help|-h|help)
+      print_help
+      return "${EXIT_SUCCESS}"
+      ;;
+    --version|-v|version)
+      print_version
+      return "${EXIT_SUCCESS}"
+      ;;
+    list)
+      cmd_list "$@"
+      return $?
+      ;;
+    info)
+      cmd_info "$@"
+      return $?
+      ;;
+    init)
+      cmd_init "$@"
+      return $?
+      ;;
+    *)
+      error "unknown command '${command}'."
+      printf '\n' >&2
+      print_help >&2
+      return "${EXIT_INVALID_ARGUMENTS}"
+      ;;
+  esac
+}
+
+main "$@"
+exit $?

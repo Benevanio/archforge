@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck
+        run: shellcheck bin/archforge core/*.sh commands/*.sh tests/*.sh
+
+      - name: Run test suite
+        run: bash tests/run_all.sh
+
+      - name: Verify CLI starts correctly
+        run: ./bin/archforge >/dev/null; test $? -eq 2
+
+      - name: Test --help
+        run: ./bin/archforge --help | grep -q "Forge your architecture"
+
+      - name: Test --version
+        run: ./bin/archforge --version | grep -q "ArchForge v"
+
+      - name: Test list
+        run: ./bin/archforge list | grep -q "clean-ddd"
+
+      - name: Test info
+        run: ./bin/archforge info clean-ddd | grep -q "Architecture: Clean Architecture + DDD"
+
+      - name: Test init
+        run: |
+          tmp_dir="$(mktemp -d)"
+          cd "$tmp_dir"
+          "${GITHUB_WORKSPACE}/bin/archforge" init ci-test-project --arch clean-ddd
+          test -d ci-test-project/src/domain
+          test -d ci-test-project/src/application
+          test -d ci-test-project/src/infrastructure
+          test -d ci-test-project/src/presentation
+          test ! -f ci-test-project/archforge.conf
