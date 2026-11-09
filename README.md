@@ -44,11 +44,30 @@ and reusable across every new project you start.
 
 ## Installation
 
+### Linux / macOS / WSL / Git Bash
+
 ```bash
 git clone <repository>
 cd archforge
 ./install.sh
 ```
+
+### Windows (PowerShell)
+
+`.sh` files don't run from PowerShell or cmd.exe — running `.\install.sh`
+there does nothing. Use the PowerShell installer instead (requires
+[Git for Windows](https://git-scm.com/download/win), which provides Git Bash):
+
+```powershell
+git clone <repository>
+cd archforge
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+`install.ps1` creates an `archforge.cmd` shim in
+`%LocalAppData%\ArchForge\bin` (running the CLI through Git Bash) and adds
+that directory to your user `PATH`. Open a new terminal afterwards, then
+run `archforge --help`.
 
 `install.sh` will:
 
